@@ -1,4 +1,4 @@
-@import url("//fonts.googleapis.com/css?family=Ubuntu");
+
 /*!
  * bootswatch v3.2.0
  * Homepage: http://bootswatch.com
@@ -6202,6 +6202,7 @@ body {
 
 .chat-box-main {
     max-height:500px;
+    height: 390px;
     overflow:auto;
 }
 .chat-box-div {

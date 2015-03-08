@@ -13,32 +13,32 @@ function changeState(st)
 	};
 	function createMessage(msg,id,nickname)
 	{
-		k = document.createElement('div');
-		k.id = id;
-	    var a = document.createElement('div');
-	    a.className = "chat-box-left";
-	    a.innerHTML = msg;
-	    addButtons(a,id);
-	    k.appendChild(a);
+		kDiv = document.createElement('div');
+		kDiv.id = id;
+	    var aDiv = document.createElement('div');
+	    aDiv.className = "chat-box-left";
+	    aDiv.innerHTML = msg;
+	    addButtons(aDiv,id);
+	    kDiv.appendChild(aDiv);
 	    
-	    var b = document.createElement('div');
-	    b.className = "chat-box-name-left";
+	    var bDiv = document.createElement('div');
+	    bDiv.className = "chat-box-name-left";
 	    var image = document.createElement('img');
 	    image.src = "http://vladsokolovsky.com/forums/uploads/profile/photo-36.jpg?_r=0";
 	    image.alt = "bootstrap Chat box user image";
 	    image.className = "img-circle";
-	    b.appendChild(image);
-	    b.innerHTML += new Date().toLocaleString();
-	    b.innerHTML += "- ";
-	    b.innerHTML += nickname;
-	    k.appendChild(b);
+	    bDiv.appendChild(image);
+	    bDiv.innerHTML += new Date().toLocaleString();
+	    bDiv.innerHTML += "- ";
+	    bDiv.innerHTML += nickname;
+	    kDiv.appendChild(bDiv);
 
-		var c = document.createElement('hr');
-	    c.className = "hr-clas";                        
-        k.appendChild(c);
+		var cDiv = document.createElement('hr');
+	    cDiv.className = "hr-clas";                        
+        kDiv.appendChild(cDiv);
         document.getElementById('message').value = "";
 
-        document.getElementById('myChat').appendChild(k);
+        document.getElementById('myChat').appendChild(kDiv);
         document.getElementById('myChat').scrollTop = document.getElementById('myChat').scrollHeight;
 	}
 	function sendClick() {
@@ -46,7 +46,7 @@ function changeState(st)
 		document.getElementById('kol').value = document.getElementById('kol').value + 1;
 		$.ajax({
                         method: 'POST',
-                        data: { message: "adsffs" }
+                        data: { message: document.getElementById('message').value }
         });
     };
     function deleteMessage(id)
@@ -56,11 +56,11 @@ function changeState(st)
     };
     function editMessage(id)
     {
-    	var b = document.getElementById(id.slice(1));
+    	var elem = document.getElementById(id.slice(1));
     	(element = document.getElementById(id)).parentNode.removeChild(element);
-    	var a = b.getElementsByClassName("chat-box-left")[0].innerHTML;
-    	var message = a.slice(0,a.search('<'));
-    	b.getElementsByClassName("chat-box-left")[0].innerHTML = "";
+    	var elema = elem.getElementsByClassName("chat-box-left")[0].innerHTML;
+    	var message = elema.slice(0,elema.search('<'));
+    	elem.getElementsByClassName("chat-box-left")[0].innerHTML = "";
     	var input = document.createElement('input');
     	input.type = "text";
     	input.className = "form-control";
@@ -78,15 +78,15 @@ function changeState(st)
     	butSave.addEventListener("click", function(){ save(id); });
     	but.appendChild(butSave);
     	inpGr.appendChild(but);
-    	b.getElementsByClassName("chat-box-left")[0].appendChild(inpGr);
+    	elem.getElementsByClassName("chat-box-left")[0].appendChild(inpGr);
     };
     function save(id)
     {
-    	var b = document.getElementById(id.slice(1));
-    	var t = b.getElementsByClassName("chat-box-left")[0];
-    	var msg = t.getElementsByClassName("form-control")[0].value;
-    	b.getElementsByClassName("chat-box-left")[0].innerHTML = msg;
-    	addButtons(t, id.slice(1));
+    	var elem = document.getElementById(id.slice(1));
+    	var elemt = elem.getElementsByClassName("chat-box-left")[0];
+    	var msg = elemt.getElementsByClassName("form-control")[0].value;
+    	elem.getElementsByClassName("chat-box-left")[0].innerHTML = msg;
+    	addButtons(elemt, id.slice(1));
     };
     function addButtons(prev, id)
     {
@@ -116,17 +116,62 @@ function changeState(st)
     	document.getElementById('nick').value = document.getElementById('NickName').value;
     	element = document.getElementById('forLog');
     	element.innerHTML = "";
-    	var lbl = document.createElement('label');
+    	var lbl = document.createElement('h4');
     	lbl.innerHTML = document.getElementById('nick').value;
     	element.appendChild(lbl);
-    	var buttonEdit = document.createElement('button');
-    	buttonEdit.className = "btn pull-right";
-    	buttonEdit.innerHTML = "Log Out";
-    	buttonEdit.id = 'logout';
-    	buttonEdit.style.marginTop= "10px";
-    	buttonEdit.addEventListener("click", function(){ logout(); });
-    	element.appendChild(buttonEdit);
+    	var buttonLog = document.createElement('button');
+    	buttonLog.className = "btn pull-right";
+    	buttonLog.innerHTML = "Log Out";
+    	buttonLog.id = 'logout';
+    	buttonLog.style.marginTop= "10px";
+    	buttonLog.addEventListener("click", function(){ logout(); });
+    	element.appendChild(buttonLog);
     	document.getElementById('forName').appendChild(lbl);
+        var buttonEdit = document.createElement('button');
+        buttonEdit.className = "btn";
+        buttonEdit.innerHTML = "Edit Nick";
+        buttonEdit.id = 'editNick';
+        buttonEdit.addEventListener("click", function(){ editNick(); });
+        document.getElementById('forName').appendChild(buttonEdit);
+    };
+    function editNick()
+    {
+        var elem = document.getElementById('forName');
+        var nickname = elem.getElementsByTagName('h4')[0].innerHTML;
+        elem.innerHTML = "";
+        var input = document.createElement('input');
+        input.type = "text";
+        input.className = "form-control";
+        input.value = nickname.trim();
+        input.id = "nickEdit";
+        var inpGr = document.createElement('input-group');
+        inpGr.appendChild(input);
+        var but = document.createElement('span');
+        but.className = "input-group-btn";
+        var butSave = document.createElement('button');
+        butSave.className = "btn btn-info";
+        butSave.value = "Save";
+        butSave.id = 'saveNick';
+        butSave.innerHTML = "Save";
+        butSave.addEventListener("click", function(){ saveNick(); });
+        but.appendChild(butSave);
+        inpGr.appendChild(but);
+        elem.appendChild(inpGr);
+    };
+    function saveNick()
+    {
+        document.getElementById('nick').value = document.getElementById('nickEdit').value;
+        element = document.getElementById('forName');
+        element.innerHTML = "";
+        var lbl = document.createElement('h4');
+        lbl.innerHTML = document.getElementById('nick').value;
+        element.appendChild(lbl);
+        var buttonEdit = document.createElement('button');
+        buttonEdit.className = "btn";
+        buttonEdit.innerHTML = "Edit Nick";
+        buttonEdit.id = 'editNick';
+        buttonEdit.addEventListener("click", function(){ editNick(); });
+        document.getElementById('forName').appendChild(buttonEdit);
     };
     function logout()
     {
