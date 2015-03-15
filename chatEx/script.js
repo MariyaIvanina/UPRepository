@@ -1,6 +1,7 @@
-function changeState(st)
-	{
-		if(st == false)
+var isAvalible = true;  //zer_ik
+function changeState()
+{
+		if(isAvalible)
 		{
 			document.getElementById('state').className = "btn btn-primary btn-danger";
 			document.getElementById('state').innerHTML = "Server is not available";
@@ -10,7 +11,9 @@ function changeState(st)
 			document.getElementById('state').className = "btn btn-primary btn-success";
 			document.getElementById('state').innerHTML = "Server is available";
 		}
-	};
+		isAvalible = !isAvalible;
+};
+	
 	function createMessage(msg,id,nickname)
 	{
 		kDiv = document.createElement('div');
@@ -23,7 +26,7 @@ function changeState(st)
 	    
 	    var bDiv = document.createElement('div');
 	    bDiv.className = "chat-box-name-left";
-	    var image = document.createElement('img');
+	    var image = document.createElement('img');	
 	    image.src = "http://vladsokolovsky.com/forums/uploads/profile/photo-36.jpg?_r=0";
 	    image.alt = "bootstrap Chat box user image";
 	    image.className = "img-circle";
@@ -40,10 +43,14 @@ function changeState(st)
 
         document.getElementById('myChat').appendChild(kDiv);
         document.getElementById('myChat').scrollTop = document.getElementById('myChat').scrollHeight;
+		//-----------------------zer_ik----------------------------
+		var messageNode = makeMessageNode( id, msg, new Date().toLocaleString() + "- " + nickname );
+		addMessageNode( messageNode );
 	}
 	function sendClick() {
 		createMessage(document.getElementById('message').value, document.getElementById('kol').value, document.getElementById('nick').value);
-		document.getElementById('kol').value = document.getElementById('kol').value + 1;
+		document.getElementById('kol').value = parseInt(document.getElementById('kol').value) + 1;
+		localStorage.setItem("currentID", document.getElementById('kol').value);
 		$.ajax({
                         method: 'POST',
                         data: { message: document.getElementById('message').value }
@@ -53,6 +60,7 @@ function changeState(st)
     {
     	var b = document.getElementById('myChat');
     	(element = document.getElementById(id)).parentNode.removeChild(element);
+		deleteMessageNode(id); // zer_ik
     };
     function editMessage(id)
     {
@@ -87,6 +95,7 @@ function changeState(st)
     	var msg = elemt.getElementsByClassName("form-control")[0].value;
     	elem.getElementsByClassName("chat-box-left")[0].innerHTML = msg;
     	addButtons(elemt, id.slice(1));
+		changeMessageNode( id.slice(1), msg ); // zer_ik
     };
     function addButtons(prev, id)
     {
@@ -109,11 +118,18 @@ function changeState(st)
     	but1.className = "glyphicon glyphicon-pencil";
     	buttonEdit.appendChild(but1);
     	prev.appendChild(buttonEdit);
-
     };
-    function login()
+	
+    function login() // zer_ik
     {
-    	document.getElementById('nick').value = document.getElementById('NickName').value;
+		localStorage.setItem("nick" , document.getElementById('NickName').value);  
+		localStorage.setItem("log", "true"); 					
+		loginNick(document.getElementById('NickName').value);
+    };
+	
+	function loginNick(nick) //zer_ik
+	{
+		document.getElementById('nick').value = nick;
     	element = document.getElementById('forLog');
     	element.innerHTML = "";
     	var lbl = document.createElement('h4');
@@ -133,7 +149,8 @@ function changeState(st)
         buttonEdit.id = 'editNick';
         buttonEdit.addEventListener("click", function(){ editNick(); });
         document.getElementById('forName').appendChild(buttonEdit);
-    };
+	}
+	
     function editNick()
     {
         var elem = document.getElementById('forName');
@@ -160,7 +177,8 @@ function changeState(st)
     };
     function saveNick()
     {
-        document.getElementById('nick').value = document.getElementById('nickEdit').value;
+        document.getElementById('nick').value = document.getElementById('nickEdit').value; //zer_ik
+		localStorage.setItem("nick" , document.getElementById('nick').value);
         element = document.getElementById('forName');
         element.innerHTML = "";
         var lbl = document.createElement('h4');
@@ -176,6 +194,8 @@ function changeState(st)
     function logout()
     {
 		document.getElementById('nick').value = "";
+		localStorage.setItem("log", "false"); // zer_ik
+		localStorage.setItem("nick" , document.getElementById('nick').value); // zer_ik
 		document.getElementById('forName').innerHTML = "";
 		document.getElementById('forLog').innerHTML = "";
 		elem = document.createElement('div');
@@ -206,3 +226,105 @@ function changeState(st)
     	elem.appendChild(buttonReg);
     	document.getElementById('forLog').appendChild(elem);
     };
+	
+	//----------------------------------------zer_ik------------------------------------------
+	
+	var messageList = [];
+	var currentNickName = "NAME";
+	var currentID = 1;
+	var isLog = false;
+	
+	function makeMessageNode(id, text, info)
+	{
+		return {
+			id : id,
+			text : text,
+			info : info
+		};
+	};
+	
+	function addMessageNode(node)
+	{
+		messageList.push(node);
+		store();
+	}
+	
+	function changeMessageNode(id, newText)
+	{
+		for(var i=0; i<messageList.length; i++)
+			if(messageList[i].id==id)
+			{
+				messageList[i].text = newText;
+				store();
+				return;
+			}
+	}
+	
+	function deleteMessageNode(id)
+	{
+		for(var i=0; i<messageList.length; i++)
+			if(messageList[i].id==id)
+			{
+				messageList.splice(i,1);
+				store();
+				return;
+			}
+	}
+	
+	function restoreMessage(i)
+	{
+		kDiv = document.createElement('div');
+		kDiv.id = messageList[i].id;
+	    var aDiv = document.createElement('div');
+	    aDiv.className = "chat-box-left";
+	    aDiv.innerHTML = messageList[i].text;
+	    addButtons(aDiv,messageList[i].id);
+	    kDiv.appendChild(aDiv);
+	    
+	    var bDiv = document.createElement('div');
+	    bDiv.className = "chat-box-name-left";
+	    var image = document.createElement('img');	
+	    image.src = "http://vladsokolovsky.com/forums/uploads/profile/photo-36.jpg?_r=0";
+	    image.alt = "bootstrap Chat box user image";
+	    image.className = "img-circle";
+	    bDiv.appendChild(image);
+	    bDiv.innerHTML += messageList[i].info;	
+	    kDiv.appendChild(bDiv);
+
+		var cDiv = document.createElement('hr');
+	    cDiv.className = "hr-clas";                        
+        kDiv.appendChild(cDiv);
+		
+        document.getElementById('myChat').appendChild(kDiv);
+        document.getElementById('myChat').scrollTop = document.getElementById('myChat').scrollHeight;
+	}
+	
+	function restoreAllMessages()
+	{
+			for(var i=0; i<messageList.length; i++)
+				restoreMessage(i);
+	}
+	
+	function init()
+	{
+		var messages = localStorage.getItem("messages");
+		if( messages )
+			messageList = JSON.parse(messages);
+		var nick = localStorage.getItem("nick");
+		if( nick )
+			document.getElementById('nick').value = nick;
+		var id = localStorage.getItem("currentID");
+		if( id )
+			document.getElementById('kol').value = id;
+		var log = localStorage.getItem("log");
+		if( log && log=="true")
+			loginNick(nick);
+		else
+			logout();
+		restoreAllMessages();
+	}
+	
+	function store()
+	{
+		localStorage.setItem("messages", JSON.stringify(messageList));
+	}
