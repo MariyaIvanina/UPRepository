@@ -55,6 +55,7 @@ public class Message implements Serializable{
 		js.put("Text", getText());
 		js.put("addedDate", getAddedDate());
         js.put("userId", getUserId());
+        js.put("modification", getModification());
 		return js.toJSONString();
 	}
         public static Message getEditedMessage(JSONObject obj)

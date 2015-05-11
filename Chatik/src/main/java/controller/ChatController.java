@@ -10,6 +10,7 @@ package controller;
  *
  * @author Mary
  */
+import org.springframework.web.bind.annotation.ResponseBody;
 import utilities.MessageExchange;
 import dbcontext.BdContext;
 import dbcontext.UserRepository;
@@ -46,6 +47,7 @@ import entity.User;
 public class ChatController {
     private List<Message> history = new ArrayList<Message>();
     private int messageSize = 0;
+    private int lastModification = 0;
     private MessageExchange messageExchange = new MessageExchange();
 
     List<Message> getActions(int index) {
@@ -72,6 +74,7 @@ public class ChatController {
         sendResponse(resp,messageExchange.getServerResponseUser(LoginController.onlineUsers));
     }
     @RequestMapping(value="/msgchat/{text}", method = RequestMethod.GET)
+
     public void getMessages(@PathVariable("text") String text,HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException
     {
         if (text != null) {
@@ -80,17 +83,8 @@ public class ChatController {
             Logger.getLogger(ChatController.class.getName()).info("Get request:token " + token + " recieved");
             if (token != null && !"".equals(token)) {
                 int index = messageExchange.getIndex(token);
-                if(index == 0)
-                {
-                    resp.setStatus(HttpServletResponse.SC_OK);
-                    List<Message> messages = new BdContext().getMessages();
-                    messageSize = messages.size();
-                    sendResponse(resp, messageExchange.getServerResponse(messages));
-                }
-                else {
-                    resp.setStatus(HttpServletResponse.SC_OK);
-                    sendResponse(resp, messageExchange.getServerResponse(getActions(index-messageSize)));
-                }
+                List<Message> messages = new BdContext().getMessagesByModification(index);
+                sendResponse(resp, messageExchange.getServerResponse(messages));
             } 
             
         }
@@ -111,6 +105,8 @@ public class ChatController {
         String[] mu = req.getParameterMap().keySet().toArray(new String[req.getParameterMap().keySet().size()]);
         if(mu.length > 0)
             message = new Message(messageExchange.getJSONObject(mu[0]));
+        ++lastModification;
+        message.setModification(lastModification);
         BdContext my = new BdContext();
         try {
             my.insertValue(message);
@@ -136,7 +132,8 @@ public class ChatController {
         Logger.getLogger(ChatController.class.getName()).info("Gnange Nick from User " + user.getUser_name());
         new UserRepository().updateUser(user);
         updateListUser(user);
-        history.addAll(new BdContext().getUpdatedMessages(user.getUser_id(),user.getUser_name()));
+        ++lastModification;
+        history.addAll(new BdContext().getUpdatedMessages(user.getUser_id(),user.getUser_name(),lastModification));
     }
     @RequestMapping(value="/chat", method = RequestMethod.GET)
     public String toChat(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException 
@@ -144,6 +141,7 @@ public class ChatController {
         String currentuser = getUserEmail(req);
         User user = new UserRepository().getUser(currentuser);
         history = new ArrayList<Message>();
+        lastModification = new BdContext().getLastModification();
         if(user != null)
         {
             model.addAttribute("username", user.getUser_name());
@@ -162,7 +160,8 @@ public class ChatController {
             if (id != null && !"".equals(id)) {
                 int index =Integer.parseInt(id);
                 history.add(new Message(index));
-                new BdContext().deleteMessage(index);
+                ++lastModification;
+                new BdContext().updateDeletedMessage(index, lastModification);
             }
         }
     }
@@ -176,6 +175,8 @@ public class ChatController {
     	if (message != null) {
             Logger.getLogger(ChatController.class.getName()).info("EDIT request:id= "+message.getMessageID()+"name=" + message.getNickName()+" msg = "+message.getText() +"recieved");
             try {
+                ++lastModification;
+                message.setModification(lastModification);
                 new BdContext().updateMessage(message);
                 history.add(new BdContext().getMessage(message.getMessageID()));
             } catch (SQLException ex) {

@@ -40,6 +40,16 @@ public class MyService implements IMyService {
         statement.setInt(2,(Integer)args[2] );
         statement.executeUpdate();
     }
+
+    @Override
+    public void serviceForUpdatingDeleting(Object[] args) throws SQLException {
+        PreparedStatement statement= MyThreadLocal.getConnection().prepareStatement((String)args[0]);
+        statement.setString(1,(String)args[1] );
+        statement.setInt(2,(Integer)args[2] );
+        statement.setInt(3,(Integer)args[3] );
+        statement.executeUpdate();
+    }
+
     @Override
     public void serviceForUpdatingNickNamesForMessages(Object [] args) throws SQLException{
         PreparedStatement statement= MyThreadLocal.getConnection().prepareStatement((String)args[0]);

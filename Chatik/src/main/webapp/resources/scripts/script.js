@@ -5,6 +5,7 @@
  */
 var timerId;
 var changesMade = 0;
+var lastChange = 0;
 function changeState(st)
 	{
 		if(st == false)
@@ -51,8 +52,8 @@ function changeState(st)
         document.getElementById('myChat').scrollTop = document.getElementById('myChat').scrollHeight;
 	}
 	function starting()
-	{ 	
-		timerId = setInterval(getMessages,3000);
+	{
+        setTimeout(getMessages, 3000);
 	}
     function startingUsers()
 	{ 	
@@ -108,7 +109,8 @@ function changeState(st)
 		$.ajax({
                         method: 'GET',
                         url:"/Chat/msgchat/token=TN"+(((+document.getElementById('kol').value)*8)+11)+"EN",
-						success:fillWithMessages
+						success:fillWithMessages,
+                        complete: getMessages
 						
                  });
 	}
@@ -120,6 +122,7 @@ function changeState(st)
 		$.each(messages, function(key,value){
           if(value != null)
           {
+                lastChange = value.modification;
                 if(value.Text != "")
                 {
                     if(document.getElementById(value.messageID)==null)
@@ -135,10 +138,9 @@ function changeState(st)
                 else {
                     deleteMessageDO(value.messageID);
                 }
-                ++changesMade;
          }
 		});
-        document.getElementById('kol').value = changesMade;
+        document.getElementById('kol').value = lastChange;
 	}
     function sendClick() 
     {
@@ -168,7 +170,6 @@ function changeState(st)
 	
     function editMessage(id)
     {
-        clearInterval(timerId);
     	var elem = document.getElementById(id.slice(1));
     	(element = document.getElementById(id)).parentNode.removeChild(element);
     	var elema = elem.getElementsByClassName("chat-box-left")[0].innerHTML;
@@ -205,7 +206,6 @@ function changeState(st)
                         data: JSON.stringify({ Text: msg, NickName: document.getElementById('nick').value,addedDate: new Date().toLocaleString(),
 												messageID: id})
         });
-        timerId = setInterval(getMessages, 3000);
     };
     function saveEdited(id,text,nick, date)
     {
