@@ -110,8 +110,7 @@ function changeState(st)
                         method: 'GET',
                         url:"/Chat/msgchat/token=TN"+(((+document.getElementById('kol').value)*8)+11)+"EN",
 						success:fillWithMessages,
-                        complete: getMessages
-						
+                        complete: setTimeout(getMessages, 3000)
                  });
 	}
 	function fillWithMessages(messagesJ)
@@ -153,7 +152,6 @@ function changeState(st)
 												addedDate: new Date().toLocaleString()})
         });
 		document.getElementById('message').value="";
-		//setTimeout(function(){ getMessages();},100);
     };
     function deleteMessage(id)
     {
@@ -201,7 +199,7 @@ function changeState(st)
     	var elemt = elem.getElementsByClassName("chat-box-left")[0];
     	var msg = elemt.getElementsByClassName("form-control")[0].value;
         $.ajax({
-                        method: 'POST',
+                        method: 'PUT',
                         url: '/Chat/msgchatEdit',
                         data: JSON.stringify({ Text: msg, NickName: document.getElementById('nick').value,addedDate: new Date().toLocaleString(),
 												messageID: id})

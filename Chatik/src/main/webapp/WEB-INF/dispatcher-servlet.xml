@@ -20,7 +20,7 @@
         base-package="controller" />
 
     <bean id="viewResolver"
-        class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+        class="org.springframework.web.servlet.view.UrlBasedViewResolver" >
         <property name="viewClass"
             value="org.springframework.web.servlet.view.JstlView" />
         <property name="prefix" value="/jsp/" />
@@ -67,6 +67,11 @@
         </list>
     </property>
 </bean>
+    <bean id="asyncTaskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="5" />
+        <property name="maxPoolSize" value="10" />
+        <property name="queueCapacity" value="25" />
+    </bean>
 <mvc:interceptors>
     <bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
         <property name="paramName" value="lang" />
@@ -76,5 +81,7 @@
     </bean>
 </mvc:interceptors>
 <mvc:resources mapping="/resources/**" location="/resources/"/>
-<mvc:annotation-driven />
+<mvc:annotation-driven >
+    <mvc:async-support default-timeout="30000" task-executor="asyncTaskExecutor" />
+</mvc:annotation-driven>
 </beans>

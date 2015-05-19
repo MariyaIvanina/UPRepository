@@ -10,7 +10,12 @@ package controller;
  *
  * @author Mary
  */
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+import utilities.AsyncProcessor;
 import utilities.MessageExchange;
 import dbcontext.BdContext;
 import dbcontext.UserRepository;
@@ -25,7 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,6 +51,7 @@ import entity.User;
  */
 @Controller
 @RequestMapping("/")
+@EnableAsync
 public class ChatController {
     private List<Message> history = new ArrayList<Message>();
     private int messageSize = 0;
@@ -74,19 +82,33 @@ public class ChatController {
         sendResponse(resp,messageExchange.getServerResponseUser(LoginController.onlineUsers));
     }
     @RequestMapping(value="/msgchat/{text}", method = RequestMethod.GET)
-
+    @Async
     public void getMessages(@PathVariable("text") String text,HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException
     {
+
         if (text != null) {
-            Map<String, String> map = queryToMap(text);
+            String textCopy= new String(text);
+            Map<String, String> map = queryToMap(textCopy);
             String token = map.get("token");
             Logger.getLogger(ChatController.class.getName()).info("Get request:token " + token + " recieved");
             if (token != null && !"".equals(token)) {
                 int index = messageExchange.getIndex(token);
                 List<Message> messages = new BdContext().getMessagesByModification(index);
                 sendResponse(resp, messageExchange.getServerResponse(messages));
-            } 
-            
+                if(messages.size()>0) {
+                    sendResponse(resp, messageExchange.getServerResponse(messages));
+                }
+                else {
+                    try {
+                        AsyncContext asyncContext=req.startAsync();
+                        asyncContext.setTimeout(30000);
+                        AsyncProcessor.add(asyncContext);
+                    }
+                    catch(Throwable e) {
+                        System.out.println(e.getStackTrace());
+                    }
+                }
+            }
         }
     }
     private void sendResponse(HttpServletResponse resp, String response) throws IOException {
@@ -116,6 +138,7 @@ public class ChatController {
         }
         Logger.getLogger(ChatController.class.getName()).info("Get Message from User "+message.getNickName()+" : " + message.getText() + " " + message.getMessageID() + " " + message.getUserId());
         history.add(message);
+        //AsyncProcessor.startCharityCampaign(message);
     }
     @RequestMapping(value="/changeNick", method = RequestMethod.POST)
     public void changeNick(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, IllegalStateException, ServletException, ParseException, SQLException 
@@ -150,6 +173,20 @@ public class ChatController {
         setTheme(req,model);
         return "chat";
     }
+    @RequestMapping(value="/bla", method = RequestMethod.GET)
+    public String toBla(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException
+    {
+        String currentuser = getUserEmail(req);
+        User user = new UserRepository().getUser(currentuser);
+        history = new ArrayList<Message>();
+        if(user != null)
+        {
+            model.addAttribute("username", user.getUser_name());
+            model.addAttribute("nickID", user.getUser_id());
+        }
+        setTheme(req,model);
+        return "chat";
+    }
     @RequestMapping(value="/msgchat/{text}", method = RequestMethod.DELETE)
     private void doDelete(@PathVariable("text") String text,HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws SQLException
     {
@@ -165,7 +202,7 @@ public class ChatController {
             }
         }
     }
-    @RequestMapping(value="/msgchatEdit", method = RequestMethod.POST)
+    @RequestMapping(value="/msgchatEdit", method = RequestMethod.PUT)
     private void doEdit(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws ParseException
     {
         Message message = null;
