@@ -104,7 +104,7 @@ function changeState(st)
                     }
 		});
 	}
-	function getMessages()
+	/*function getMessages()
 	{
 		$.ajax({
                         method: 'GET',
@@ -112,10 +112,60 @@ function changeState(st)
 						success:fillWithMessages,
                         complete: setTimeout(getMessages, 3000)
                  });
-	}
+	}*/
+    function getMessages() {
+        var url = '/Chat/msgchat/token=TN' + (((+document.getElementById('kol').value) * 8) + 11) + 'EN';
+        ajax("GET", url, null, function(response) {
+            fillWithMessages(response);
+            getMessages();
+        }, function () {changeState(false);});
+    }
+    function ajax(method, url, data, continueWith, continueWithError) {
+        var xhr = new XMLHttpRequest();
+
+        continueWithError = continueWithError || defaultErrorHandler;
+        xhr.open(method, url, true);
+
+        xhr.onload = function () {
+            if (xhr.readyState !== 4)
+                return;
+            if (xhr.status != 200 && xhr.status!=304) {
+                continueWithError('Error on the server side, response ' + xhr.status);
+                return;
+            }
+            if (isError(xhr.responseText) && xhr.status!=304) {
+                continueWithError('Error on the server side, response ' + xhr.responseText);
+                return;
+            }
+            if (continueWith != null) continueWith(xhr.responseText);
+        };
+
+        xhr.ontimeout = function () {
+            continueWithError('Server timed out !');
+        };
+
+        xhr.onerror = function () {
+            var errMsg = 'Server connection error !\n\n' + 'Check if \n' + '- server is active\n' +
+                '- server sends header "Access-Control-Allow-Origin:*"';
+
+            continueWithError(errMsg);
+        };
+        xhr.send(data);
+    }
+    function isError(text) {
+        if (text == "")
+            return false;
+        try {
+            var obj = JSON.parse(text);
+        } catch (ex) {
+            return true;
+        }
+        return !!obj.error;
+    }
 	function fillWithMessages(messagesJ)
 	{
 		changeState(true);
+        if (messagesJ == null || messagesJ == "") return;
 		messagesJ=JSON.parse(messagesJ);
 		messages=messagesJ.messages;
 		$.each(messages, function(key,value){
@@ -199,7 +249,7 @@ function changeState(st)
     	var elemt = elem.getElementsByClassName("chat-box-left")[0];
     	var msg = elemt.getElementsByClassName("form-control")[0].value;
         $.ajax({
-                        method: 'PUT',
+                        method: 'POST',
                         url: '/Chat/msgchatEdit',
                         data: JSON.stringify({ Text: msg, NickName: document.getElementById('nick').value,addedDate: new Date().toLocaleString(),
 												messageID: id})

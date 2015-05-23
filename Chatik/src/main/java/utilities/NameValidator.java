@@ -67,7 +67,8 @@ public class NameValidator implements Validator{
         {
             if(dto.getPassword()!= null && dto.getPassword().compareTo(r.getPassword().trim())!= 0)
                 errors.rejectValue("password", "registration.Password.notEquals", "Password is not right");
-    }   }
+    }
+    }
 }
 
 

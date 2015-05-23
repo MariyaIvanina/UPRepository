@@ -82,35 +82,33 @@ public class ChatController {
         sendResponse(resp,messageExchange.getServerResponseUser(LoginController.onlineUsers));
     }
     @RequestMapping(value="/msgchat/{text}", method = RequestMethod.GET)
-    @Async
-    public void getMessages(@PathVariable("text") String text,HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException
-    {
+    public void getMessages(@PathVariable("text") String text,HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException {
 
         if (text != null) {
-            String textCopy= new String(text);
+            String textCopy = new String(text);
             Map<String, String> map = queryToMap(textCopy);
             String token = map.get("token");
             Logger.getLogger(ChatController.class.getName()).info("Get request:token " + token + " recieved");
             if (token != null && !"".equals(token)) {
                 int index = messageExchange.getIndex(token);
                 List<Message> messages = new BdContext().getMessagesByModification(index);
-                sendResponse(resp, messageExchange.getServerResponse(messages));
-                if(messages.size()>0) {
+                if (messages.size() > 0) {
                     sendResponse(resp, messageExchange.getServerResponse(messages));
-                }
-                else {
+                } else {
                     try {
-                        AsyncContext asyncContext=req.startAsync();
+
+                        boolean enabled = req.isAsyncStarted();
+                        AsyncContext asyncContext = req.startAsync();
                         asyncContext.setTimeout(30000);
                         AsyncProcessor.add(asyncContext);
-                    }
-                    catch(Throwable e) {
+                    } catch (Throwable e) {
                         System.out.println(e.getStackTrace());
                     }
                 }
             }
         }
     }
+
     private void sendResponse(HttpServletResponse resp, String response) throws IOException {
         
         OutputStream os = resp.getOutputStream();
@@ -138,7 +136,9 @@ public class ChatController {
         }
         Logger.getLogger(ChatController.class.getName()).info("Get Message from User "+message.getNickName()+" : " + message.getText() + " " + message.getMessageID() + " " + message.getUserId());
         history.add(message);
-        //AsyncProcessor.startCharityCampaign(message);
+        List<Message> msg = new ArrayList<>();
+        msg.add(message);
+        AsyncProcessor.startCharityCampaign(msg);
     }
     @RequestMapping(value="/changeNick", method = RequestMethod.POST)
     public void changeNick(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, IllegalStateException, ServletException, ParseException, SQLException 
@@ -156,7 +156,9 @@ public class ChatController {
         new UserRepository().updateUser(user);
         updateListUser(user);
         ++lastModification;
-        history.addAll(new BdContext().getUpdatedMessages(user.getUser_id(),user.getUser_name(),lastModification));
+        List<Message> msg = new ArrayList<>();
+        msg.addAll(new BdContext().getUpdatedMessages(user.getUser_id(),user.getUser_name(),lastModification));
+        AsyncProcessor.startCharityCampaign(msg);
     }
     @RequestMapping(value="/chat", method = RequestMethod.GET)
     public String toChat(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException 
@@ -173,23 +175,9 @@ public class ChatController {
         setTheme(req,model);
         return "chat";
     }
-    @RequestMapping(value="/bla", method = RequestMethod.GET)
-    public String toBla(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws IOException, SQLException
-    {
-        String currentuser = getUserEmail(req);
-        User user = new UserRepository().getUser(currentuser);
-        history = new ArrayList<Message>();
-        if(user != null)
-        {
-            model.addAttribute("username", user.getUser_name());
-            model.addAttribute("nickID", user.getUser_id());
-        }
-        setTheme(req,model);
-        return "chat";
-    }
+
     @RequestMapping(value="/msgchat/{text}", method = RequestMethod.DELETE)
-    private void doDelete(@PathVariable("text") String text,HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws SQLException
-    {
+    private void doDelete(@PathVariable("text") String text,HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws SQLException, IOException {
     	if (text != null) {
             Map<String, String> map = queryToMap(text);
             String id = map.get("id");
@@ -199,10 +187,13 @@ public class ChatController {
                 history.add(new Message(index));
                 ++lastModification;
                 new BdContext().updateDeletedMessage(index, lastModification);
+                List<Message> msg = new ArrayList<>();
+                msg.add(new Message(index));
+                AsyncProcessor.startCharityCampaign(msg);
             }
         }
     }
-    @RequestMapping(value="/msgchatEdit", method = RequestMethod.PUT)
+    @RequestMapping(value="/msgchatEdit", method = RequestMethod.POST)
     private void doEdit(HttpServletRequest req,HttpServletResponse resp,ModelMap model) throws ParseException
     {
         Message message = null;
@@ -215,9 +206,13 @@ public class ChatController {
                 ++lastModification;
                 message.setModification(lastModification);
                 new BdContext().updateMessage(message);
-                history.add(new BdContext().getMessage(message.getMessageID()));
+                List<Message> msg = new ArrayList<>();
+                msg.add(new BdContext().getMessage(message.getMessageID()));
+                AsyncProcessor.startCharityCampaign(msg);
             } catch (SQLException ex) {
                 Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
         }

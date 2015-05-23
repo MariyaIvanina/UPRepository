@@ -9,10 +9,9 @@ import dbcontext.ConnectionPool;
 import static utilities.MyThreadLocal.myThreadLocal;
 import java.lang.reflect.Method;
 import java.sql.Connection;
-import org.springframework.cglib.proxy.InvocationHandler;
-
-/**
- *
+//import org.springframework.cglib.proxy.InvocationHandler;
+import java.lang.reflect.InvocationHandler;
+ /*
  * @author Mary
  */
 public class MyInvocationHandler implements InvocationHandler {

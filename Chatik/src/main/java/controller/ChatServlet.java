@@ -53,7 +53,7 @@ public class ChatServlet extends HttpServlet {
                 if(messages.size()>0) {
                     sendResponse(response, messageExchange.getServerResponse(messages));
                 }
-                else
+                /*else
                 {
                     try {
                         AsyncContext asyncContext=request.startAsync(request,response);
@@ -64,7 +64,7 @@ public class ChatServlet extends HttpServlet {
                     {
                         System.out.println(e.getStackTrace());
                     }
-                }
+                }*/
             }
     }
     private void sendResponse(HttpServletResponse resp, String response) throws IOException {
